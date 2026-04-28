@@ -1,0 +1,133 @@
+# ------------------------------------------------------
+# THIS FILE WAS AUTOMATICALLY GENERATED (DO NOT MODIFY)
+# ------------------------------------------------------
+
+type AuthPayload {
+  accessToken: String!
+  user: User!
+}
+
+type Book {
+  author: String!
+  availableCopies: Int!
+  copies: [BookCopy!]!
+  createdAt: DateTime!
+  description: String
+  id: ID!
+  isbn: String
+  title: String!
+  totalCopies: Int!
+  updatedAt: DateTime!
+}
+
+type BookCopy {
+  code: String!
+  id: ID!
+  status: CopyStatus!
+}
+
+enum CopyStatus {
+  AVAILABLE
+  MAINTENANCE
+  RESERVED
+}
+
+input CreateBookInput {
+  author: String!
+  description: String
+  initialCopies: Int!
+  isbn: String
+  title: String!
+}
+
+input CreateReservationInput {
+  bookId: ID!
+  dueDate: DateTime!
+  idempotencyKey: String
+}
+
+input CreateUserInput {
+  email: String!
+  name: String!
+  password: String!
+  role: Role!
+}
+
+"""
+A date-time string at UTC, such as 2019-12-03T09:54:33Z, compliant with the date-time format.
+"""
+scalar DateTime
+
+input LoginInput {
+  email: String!
+  password: String!
+}
+
+type Mutation {
+  addBookCopy(bookId: ID!): BookCopy!
+  createBook(input: CreateBookInput!): Book!
+  createReservation(input: CreateReservationInput!): Reservation!
+  createUser(input: CreateUserInput!): User!
+  deleteBook(id: ID!): Boolean!
+  login(input: LoginInput!): AuthPayload!
+  register(input: RegisterInput!): AuthPayload!
+  removeBookCopy(copyId: ID!): Boolean!
+  returnBook(reservationId: ID!): Reservation!
+  updateBook(id: ID!, input: UpdateBookInput!): Book!
+}
+
+type Query {
+  book(id: ID!): Book
+  books(available: Boolean): [Book!]!
+  me: User!
+  myReservations(filters: ReservationFiltersInput): [Reservation!]!
+  reservationsByBook(bookId: ID!, filters: ReservationFiltersInput): [Reservation!]!
+  reservationsByUser(filters: ReservationFiltersInput, userId: ID!): [Reservation!]!
+}
+
+input RegisterInput {
+  email: String!
+  name: String!
+  password: String!
+}
+
+enum ResStatus {
+  ACTIVE
+  RETURNED
+}
+
+type Reservation {
+  bookCopy: BookCopy!
+  dueDate: DateTime!
+  id: ID!
+  reservedAt: DateTime!
+  returnedAt: DateTime
+  status: ResStatus!
+  user: User!
+}
+
+input ReservationFiltersInput {
+  from: DateTime
+  status: ResStatus
+  to: DateTime
+}
+
+enum Role {
+  ADMIN
+  USER
+}
+
+input UpdateBookInput {
+  author: String
+  description: String
+  isbn: String
+  title: String
+}
+
+type User {
+  createdAt: DateTime!
+  email: String!
+  id: ID!
+  name: String!
+  role: Role!
+}
