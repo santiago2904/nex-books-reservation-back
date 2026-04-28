@@ -76,6 +76,7 @@ export class ReservationsService {
               idempotencyKey: input.idempotencyKey ?? null,
               status: 'ACTIVE',
             },
+            include: { bookCopy: { include: { book: true } }, user: true },
           }),
           this.prisma.bookCopy.update({
             where: { id: copy.id },
@@ -125,14 +126,16 @@ export class ReservationsService {
         code: 'RESERVATION_NOT_ACTIVE',
       });
     }
-    const [updated] = await this.prisma.$transaction([
-      this.prisma.reservation.update({
-        where: { id: reservationId },
-        data: { status: 'RETURNED', returnedAt: new Date() },
-      }),
+    // Order matters: free the copy first so the included bookCopy reflects AVAILABLE.
+    const [, updated] = await this.prisma.$transaction([
       this.prisma.bookCopy.update({
         where: { id: r.bookCopyId },
         data: { status: 'AVAILABLE' },
+      }),
+      this.prisma.reservation.update({
+        where: { id: reservationId },
+        data: { status: 'RETURNED', returnedAt: new Date() },
+        include: { bookCopy: { include: { book: true } }, user: true },
       }),
     ]);
     return updated;

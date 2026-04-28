@@ -21,6 +21,7 @@ type Book {
 }
 
 type BookCopy {
+  book: Book
   code: String!
   id: ID!
   status: CopyStatus!

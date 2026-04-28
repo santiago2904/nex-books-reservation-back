@@ -1,5 +1,4 @@
 import { Args, Mutation, Query, Resolver } from '@nestjs/graphql';
-import { Throttle } from '@nestjs/throttler';
 import { AuthService } from './auth.service';
 import { RegisterInput } from './dto/register.input';
 import { LoginInput } from './dto/login.input';
@@ -17,14 +16,12 @@ export class AuthResolver {
   ) {}
 
   @Public()
-  @Throttle({ default: { limit: 10, ttl: 60_000 } })
   @Mutation(() => AuthPayload)
   register(@Args('input') input: RegisterInput) {
     return this.auth.register(input);
   }
 
   @Public()
-  @Throttle({ default: { limit: 10, ttl: 60_000 } })
   @Mutation(() => AuthPayload)
   login(@Args('input') input: LoginInput) {
     return this.auth.login(input.email, input.password);
