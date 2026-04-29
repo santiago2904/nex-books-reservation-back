@@ -1,0 +1,37 @@
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: nex
+      POSTGRES_PASSWORD: nex
+      POSTGRES_DB: nex_books
+    ports: ["5433:5432"]
+    volumes: [pgdata:/var/lib/postgresql/data]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U nex"]
+      interval: 3s
+      retries: 10
+
+  api:
+    build: .
+    environment:
+      DATABASE_URL: postgresql://nex:nex@db:5432/nex_books
+      JWT_SECRET: dev-secret-of-at-least-32-characters-long-padding
+      JWT_EXPIRES_IN: 1h
+      PORT: 4000
+      CORS_ORIGIN: http://localhost:5173
+      NODE_ENV: production
+    depends_on:
+      db: { condition: service_healthy }
+    ports: ["4000:4000"]
+    command: >
+      sh -c "node node_modules/.pnpm/prisma@*/node_modules/prisma/build/index.js migrate deploy
+      && node node_modules/.pnpm/tsx@*/node_modules/tsx/dist/cli.mjs prisma/seed.ts
+      && node dist/main.js"
+
+  adminer:
+    image: adminer
+    ports: ["8080:8080"]
+
+volumes:
+  pgdata:

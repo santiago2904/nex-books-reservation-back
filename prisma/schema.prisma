@@ -1,0 +1,76 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  USER
+  ADMIN
+}
+
+enum ResStatus {
+  ACTIVE
+  RETURNED
+}
+
+enum CopyStatus {
+  AVAILABLE
+  RESERVED
+  MAINTENANCE
+}
+
+model User {
+  id           String        @id @default(uuid())
+  name         String
+  email        String        @unique
+  passwordHash String
+  role         Role          @default(USER)
+  createdAt    DateTime      @default(now())
+  reservations Reservation[]
+}
+
+model Book {
+  id          String     @id @default(uuid())
+  title       String
+  author      String
+  isbn        String?    @unique
+  description String?
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  copies      BookCopy[]
+}
+
+model BookCopy {
+  id           String        @id @default(uuid())
+  bookId       String
+  book         Book          @relation(fields: [bookId], references: [id], onDelete: Cascade)
+  code         String        @unique
+  status       CopyStatus    @default(AVAILABLE)
+  createdAt    DateTime      @default(now())
+  reservations Reservation[]
+
+  @@index([bookId, status])
+}
+
+model Reservation {
+  id             String    @id @default(uuid())
+  userId         String
+  user           User      @relation(fields: [userId], references: [id])
+  bookCopyId     String
+  bookCopy       BookCopy  @relation(fields: [bookCopyId], references: [id])
+  reservedAt     DateTime  @default(now())
+  dueDate        DateTime
+  returnedAt     DateTime?
+  status         ResStatus @default(ACTIVE)
+  idempotencyKey String?
+  createdAt      DateTime  @default(now())
+
+  @@unique([userId, idempotencyKey])
+  @@index([bookCopyId, status])
+  @@index([userId, status])
+  @@index([reservedAt])
+}
