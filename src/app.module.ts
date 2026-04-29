@@ -22,6 +22,17 @@ import { RolesGuard } from './auth/guards/roles.guard';
       playground: process.env.NODE_ENV !== 'production',
       sortSchema: true,
       context: ({ req }: { req: unknown }) => ({ req }),
+      // Surface the domain `code` (set on Nest HttpException responses) as
+      // `extensions.code` so the frontend can map it to a Spanish message.
+      formatError: (formatted, error) => {
+        const original = (error as { originalError?: unknown }).originalError;
+        const response = (original as { response?: { code?: string } } | undefined)?.response;
+        const code = response?.code;
+        if (code) {
+          return { ...formatted, extensions: { ...formatted.extensions, code } };
+        }
+        return formatted;
+      },
     }),
     AuthModule,
     UsersModule,
