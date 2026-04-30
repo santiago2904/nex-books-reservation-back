@@ -37,25 +37,26 @@ async function main() {
   });
 
   console.log('Seeding books…');
-  const titles: Array<[string, string, number]> = [
-    ['Cien años de soledad', 'Gabriel García Márquez', 3],
-    ['La sombra del viento', 'Carlos Ruiz Zafón', 2],
-    ['Rayuela', 'Julio Cortázar', 2],
-    ['Pedro Páramo', 'Juan Rulfo', 2],
-    ['El Aleph', 'Jorge Luis Borges', 3],
-    ['Ficciones', 'Jorge Luis Borges', 2],
-    ['Como agua para chocolate', 'Laura Esquivel', 1],
-    ['La casa de los espíritus', 'Isabel Allende', 2],
-    ['Crónica de una muerte anunciada', 'Gabriel García Márquez', 3],
-    ['Clean Code', 'Robert C. Martin', 4],
-    ['The Pragmatic Programmer', 'Andrew Hunt', 4],
-    ['Domain-Driven Design', 'Eric Evans', 2],
-    ['Designing Data-Intensive Applications', 'Martin Kleppmann', 3],
-    ['Sapiens', 'Yuval Noah Harari', 3],
-    ['Project Hail Mary', 'Andy Weir', 4],
+  // [title, author, copies, isbn?, coverUrl?]
+  const titles: Array<[string, string, number, string?, string?]> = [
+    ['Cien años de soledad', 'Gabriel García Márquez', 3, '9780307474728', 'https://covers.openlibrary.org/b/isbn/9780307474728-L.jpg'],
+    ['La sombra del viento', 'Carlos Ruiz Zafón', 2, '9788408163435', 'https://covers.openlibrary.org/b/isbn/9788408163435-L.jpg'],
+    ['Rayuela', 'Julio Cortázar', 2, '9788437604572', 'https://covers.openlibrary.org/b/isbn/9788437604572-L.jpg'],
+    ['Pedro Páramo', 'Juan Rulfo', 2, '9780802133908', 'https://covers.openlibrary.org/b/isbn/9780802133908-L.jpg'],
+    ['El Aleph', 'Jorge Luis Borges', 3, '9780142437889', 'https://covers.openlibrary.org/b/isbn/9780142437889-L.jpg'],
+    ['Ficciones', 'Jorge Luis Borges', 2, '9780802130303', 'https://covers.openlibrary.org/b/isbn/9780802130303-L.jpg'],
+    ['Como agua para chocolate', 'Laura Esquivel', 1, '9780385420174', 'https://covers.openlibrary.org/b/isbn/9780385420174-L.jpg'],
+    ['La casa de los espíritus', 'Isabel Allende', 2, '9781416549567', 'https://covers.openlibrary.org/b/isbn/9781416549567-L.jpg'],
+    ['Crónica de una muerte anunciada', 'Gabriel García Márquez', 3, '9780307389732', 'https://covers.openlibrary.org/b/isbn/9780307389732-L.jpg'],
+    ['Clean Code', 'Robert C. Martin', 4, '9780132350884', 'https://covers.openlibrary.org/b/isbn/9780132350884-L.jpg'],
+    ['The Pragmatic Programmer', 'Andrew Hunt', 4, '9780135957059', 'https://covers.openlibrary.org/b/isbn/9780135957059-L.jpg'],
+    ['Domain-Driven Design', 'Eric Evans', 2, '9780321125217', 'https://covers.openlibrary.org/b/isbn/9780321125217-L.jpg'],
+    ['Designing Data-Intensive Applications', 'Martin Kleppmann', 3, '9781449373320', 'https://covers.openlibrary.org/b/isbn/9781449373320-L.jpg'],
+    ['Sapiens', 'Yuval Noah Harari', 3, '9780062316097', 'https://covers.openlibrary.org/b/isbn/9780062316097-L.jpg'],
+    ['Project Hail Mary', 'Andy Weir', 4, '9780593135204', 'https://covers.openlibrary.org/b/isbn/9780593135204-L.jpg'],
   ];
 
-  for (const [title, author, copies] of titles) {
+  for (const [title, author, copies, isbn, coverUrl] of titles) {
     const slug = title
       .slice(0, 8)
       .toUpperCase()
@@ -65,6 +66,8 @@ async function main() {
       data: {
         title,
         author,
+        isbn: isbn ?? null,
+        coverUrl: coverUrl ?? null,
         copies: {
           create: Array.from({ length: copies }).map((_, i) => ({
             code: `${slug}-${i + 1}`,

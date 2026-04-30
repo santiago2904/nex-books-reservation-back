@@ -8,6 +8,7 @@ export class BookOutput {
   @Field() author!: string;
   @Field(() => String, { nullable: true }) isbn?: string | null;
   @Field(() => String, { nullable: true }) description?: string | null;
+  @Field(() => String, { nullable: true }) coverUrl?: string | null;
   @Field(() => Int) totalCopies!: number;
   @Field(() => Int) availableCopies!: number;
   @Field(() => [BookCopyOutput]) copies!: BookCopyOutput[];

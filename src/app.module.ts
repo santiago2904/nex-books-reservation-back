@@ -20,6 +20,8 @@ import { RolesGuard } from './auth/guards/roles.guard';
       driver: ApolloDriver,
       autoSchemaFile: join(process.cwd(), 'src/schema.gql'),
       playground: process.env.NODE_ENV !== 'production',
+      introspection: true,
+      csrfPrevention: false, // Disable CSRF for development
       sortSchema: true,
       context: ({ req }: { req: unknown }) => ({ req }),
       // Surface the domain `code` (set on Nest HttpException responses) as

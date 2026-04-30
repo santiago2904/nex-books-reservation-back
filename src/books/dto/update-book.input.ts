@@ -7,4 +7,5 @@ export class UpdateBookInput {
   @Field(() => String, { nullable: true }) @IsOptional() @IsString() @MinLength(1) author?: string;
   @Field(() => String, { nullable: true }) @IsOptional() @IsString() isbn?: string;
   @Field(() => String, { nullable: true }) @IsOptional() @IsString() description?: string;
+  @Field(() => String, { nullable: true }) @IsOptional() @IsString() coverUrl?: string;
 }

@@ -15,6 +15,7 @@ export class BooksService {
     author: string;
     isbn?: string;
     description?: string;
+    coverUrl?: string;
     initialCopies: number;
   }) {
     const codePrefix = (input.isbn ?? input.title.slice(0, 4).toUpperCase().replace(/\s+/g, '')) || 'BOOK';
@@ -25,6 +26,7 @@ export class BooksService {
         author: input.author,
         isbn: input.isbn ?? null,
         description: input.description ?? null,
+        coverUrl: input.coverUrl ?? null,
         copies: {
           create: Array.from({ length: input.initialCopies }).map((_, i) => ({
             code: `${codePrefix}-${ts}-${i}`,
@@ -42,6 +44,7 @@ export class BooksService {
       author?: string;
       isbn?: string;
       description?: string;
+      coverUrl?: string;
     },
   ) {
     return this.prisma.book.update({

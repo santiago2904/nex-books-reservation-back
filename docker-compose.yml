@@ -8,7 +8,7 @@ services:
     ports: ["5433:5432"]
     volumes: [pgdata:/var/lib/postgresql/data]
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U nex"]
+      test: ["CMD-SHELL", "pg_isready -U nex -d nex_books"]
       interval: 3s
       retries: 10
 
@@ -20,7 +20,7 @@ services:
       JWT_EXPIRES_IN: 1h
       PORT: 4000
       CORS_ORIGIN: http://localhost:5173
-      NODE_ENV: production
+      NODE_ENV: development
     depends_on:
       db: { condition: service_healthy }
     ports: ["4000:4000"]

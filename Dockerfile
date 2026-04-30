@@ -21,11 +21,12 @@ RUN pnpm build
 # ----- runtime -----
 FROM node:20-alpine AS runtime
 WORKDIR /app
-RUN corepack enable && apk add --no-cache dumb-init wget
+RUN corepack enable && apk add --no-cache dumb-init wget openssl openssl-dev
 COPY --from=build /app/dist ./dist
 COPY --from=build /app/node_modules ./node_modules
 COPY --from=build /app/prisma ./prisma
 COPY --from=build /app/package.json .
+RUN chown -R node:node /app
 ENV NODE_ENV=production
 EXPOSE 4000
 USER node
