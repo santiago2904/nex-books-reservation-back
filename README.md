@@ -1,107 +1,220 @@
 # Nex Books Reservation — Backend
 
-Library book reservation API. **NestJS 11 + GraphQL (Apollo) + Prisma + PostgreSQL**, JWT auth with `USER`/`ADMIN` roles, multi-copy books, and race-safe reservations enforced by a Postgres partial unique index.
+API REST/GraphQL para gestión de reservas de libros de biblioteca. Construida con NestJS 11, GraphQL (Apollo Server 4), Prisma ORM y PostgreSQL. Autenticación JWT con roles `USER` / `ADMIN`, modelo de múltiples ejemplares por libro y reservas seguras ante condiciones de carrera.
 
-Companion frontend: [`nex-books-reservation-front`](../nex-books-reservation-front).
+> **Repo frontend:** [`nex-books-reservation-front`](https://github.com/santiago2904/nex-books-reservation-front)
 
-## Quick start (local, Docker)
+---
+
+## Stack
+
+| Tecnología | Versión | Rol |
+|---|---|---|
+| NestJS | 11 | Framework Node.js |
+| GraphQL (code-first) | Apollo Server 4 | API principal |
+| Prisma ORM | 5 | Capa de base de datos |
+| PostgreSQL | 16 | Base de datos relacional |
+| JWT (`@nestjs/jwt`) | — | Autenticación stateless |
+| Passport (`passport-jwt`) | — | Estrategia JWT |
+| bcryptjs | — | Hash de contraseñas |
+| class-validator | — | Validación de DTOs |
+| Zod | — | Validación de variables de entorno en boot |
+| Jest + Testcontainers | — | Pruebas unitarias e integración |
+
+---
+
+## Funcionalidades
+
+### Autenticación
+- `register` / `login` — emiten JWT (HS256, exp 1h)
+- Guards globales (`GqlAuthGuard` + `RolesGuard`) — todo protegido por defecto; `@Public()` expone endpoints públicos
+- Roles: `USER` y `ADMIN`
+
+### Libros (`ADMIN`)
+- CRUD completo de títulos con campo `coverUrl` opcional
+- Gestión de ejemplares físicos: `addBookCopy` / `removeBookCopy`
+- `deleteBook` bloqueado si existen reservas activas
+
+### Reservas
+- `createReservation` — reserva un ejemplar con idempotency key
+- `returnBook` — devuelve el ejemplar (antes o después de la fecha de vencimiento)
+- `myReservations` — reservas del usuario autenticado con filtros de fecha
+- `reservationsByBook` / `reservationsByUser` — vistas admin con filtros
+- `allReservations` — todas las reservas con búsqueda full-text y filtros (solo ADMIN)
+
+### Reglas de negocio
+| Regla | Enforcement |
+|---|---|
+| R1: reserva requiere usuario, libro y `dueDate > now` | DTO + servicio |
+| R2: máximo una reserva activa por ejemplar | Índice parcial único en DB + retry en `P2002` |
+| R3: devolución antes de la fecha de vencimiento permitida | `returnBook` solo verifica `status = ACTIVE` |
+| R4: máximo 3 reservas activas por usuario | Conteo antes del insert |
+| R5: consultas de reservas con filtro por fecha | Args `from` / `to` en todos los resolvers |
+
+---
+
+## Quickstart
+
+### Con Docker (recomendado — un solo comando)
 
 ```bash
 docker compose up --build
 ```
 
-- API → `http://localhost:4000/graphql` (Apollo Sandbox)
-- Adminer → `http://localhost:8080` · Server `db`, User `nex`, Pass `nex`, DB `nex_books`
-- Postgres exposed on **5433** (avoids collision with other local Postgres on 5432)
+Levanta: **API** en `:4000` · **PostgreSQL** en `:5433` · **Adminer** en `:8080`
 
-Migrations and seeds run automatically on first boot.
+Migraciones y seeds se aplican automáticamente al boot.
 
-## Quick start (without Docker)
+### Sin Docker
 
 ```bash
 pnpm install
-cp .env.example .env                    # adjust DATABASE_URL if needed
-pnpm prisma:deploy && pnpm prisma:seed
-pnpm start:dev                          # http://localhost:4000/graphql
+cp .env.example .env      # configurar DATABASE_URL
+pnpm prisma:deploy        # aplicar migraciones
+pnpm prisma:seed          # cargar datos de prueba
+pnpm start:dev            # http://localhost:4000/graphql
 ```
 
-Requires Node 20+ and a running Postgres reachable via `DATABASE_URL`.
+Requiere PostgreSQL corriendo y accesible vía `DATABASE_URL`.
 
-## Seed credentials
+---
 
-| Email | Password | Role |
+## Variables de entorno
+
+| Variable | Default (dev) | Descripción |
 |---|---|---|
-| `admin@nex.test` | `Admin123!` | `ADMIN` |
-| `ana@nex.test` | `User1234!` | `USER` |
-| `bruno@nex.test` | `User1234!` | `USER` |
+| `DATABASE_URL` | `postgresql://nex:nex@localhost:5433/nex_books` | Conexión a PostgreSQL |
+| `JWT_SECRET` | *(dev secret)* | Clave de firma JWT — mínimo 32 bytes en producción |
+| `JWT_EXPIRES_IN` | `1h` | Expiración del token |
+| `PORT` | `4000` | Puerto de la API |
+| `CORS_ORIGIN` | `http://localhost:5173` | Origen permitido (separados por coma) |
+| `NODE_ENV` | `development` | Entorno |
 
-15 books, ~44 copies, 1 active reservation pre-loaded.
+El boot falla intencionalmente si `JWT_SECRET` es menor de 32 caracteres o `DATABASE_URL` es inválido.
 
-## API — quick tour
+---
 
-GraphQL playground at `/graphql`. Key operations:
+## Cuentas de prueba (seed)
 
+| Email | Contraseña | Rol |
+|---|---|---|
+| `admin@nex.test` | `Admin123!` | ADMIN |
+| `ana@nex.test` | `User1234!` | USER (tiene 1 reserva activa) |
+| `bruno@nex.test` | `User1234!` | USER |
+
+15 libros con portadas (Open Library), ~44 ejemplares, 1 reserva activa precargada.
+
+---
+
+## API GraphQL
+
+**Playground:** `http://localhost:4000/graphql`
+
+### Queries públicas
 ```graphql
-# Public
-query Books { books { id title author availableCopies totalCopies } }
-
-# Auth
-mutation Login($i: LoginInput!) {
-  login(input: $i) { accessToken user { id email role } }
-}
-
-# USER (Authorization: Bearer <token>)
-mutation Reserve($i: CreateReservationInput!) {
-  createReservation(input: $i) { id status bookCopy { code book { title } } }
-}
-mutation Return($id: ID!) { returnBook(reservationId: $id) { id status returnedAt } }
-query Mine { myReservations { id status bookCopy { book { title } } } }
-
-# ADMIN
-mutation NewBook($i: CreateBookInput!) { createBook(input: $i) { id copies { id code } } }
-query ResByBook($id: ID!) { reservationsByBook(bookId: $id) { id status reservedAt } }
+books(available: Boolean): [Book!]!
+book(id: ID!): Book
 ```
 
-## Business rules — where they live
+### Mutations públicas
+```graphql
+register(input: RegisterInput!): AuthPayload!
+login(input: LoginInput!): AuthPayload!
+```
 
-| Rule | Enforcement |
-|---|---|
-| R1: reservation requires user, book, dates with `dueDate > now` | `CreateReservationInput` (class-validator) + `ReservationsService.create` |
-| R2: at most one active reservation per copy | **DB partial unique index** `reservation_active_per_copy` + service pre-check + retry-on-`P2002` |
-| R3: return is allowed before due date | `returnBook` only checks `status=ACTIVE`, never compares dates |
-| R4: max 3 active reservations per user | `count(active) < 3` before insert |
-| R5: queries support date filters | `from`/`to` args on `myReservations`, `reservationsByBook`, `reservationsByUser` |
+### Autenticadas (header: `Authorization: Bearer <token>`)
+```graphql
+me: User!
+createReservation(input: CreateReservationInput!): Reservation!
+returnBook(reservationId: ID!): Reservation!
+myReservations(filters: ReservationFiltersInput): [Reservation!]!
+```
 
-See `docs/business-rules.md` for the full mapping with test references.
+### Solo ADMIN
+```graphql
+createBook(input: CreateBookInput!): Book!
+updateBook(id: ID!, input: UpdateBookInput!): Book!
+deleteBook(id: ID!): Boolean!
+addBookCopy(bookId: ID!): BookCopy!
+removeBookCopy(copyId: ID!): Boolean!
+createUser(input: CreateUserInput!): User!
+reservationsByBook(bookId: ID!, filters: ReservationFiltersInput): [Reservation!]!
+reservationsByUser(userId: ID!, filters: ReservationFiltersInput): [Reservation!]!
+allReservations(filters: ReservationFiltersInput): [Reservation!]!
+```
 
-## Concurrency
+---
 
-The DB partial unique index is the source of truth. On `P2002` the service retries with the next available copy (max 3 attempts).
-
-Verified: `pnpm exec tsx test/concurrency.test.ts` — 10 simultaneous attempts on a single-copy book → exactly 1 succeeds, 9 fail. The proof is reproducible.
-
-## Tests
+## Pruebas
 
 ```bash
+# Unit tests (Testcontainers — requiere Docker)
+DATABASE_URL=postgresql://nex:nex@localhost:5433/nex_books pnpm test:unit
+
+# Integration tests
+pnpm test:integration
+
+# Concurrencia manual
 DATABASE_URL=postgresql://nex:nex@localhost:5433/nex_books pnpm exec tsx test/concurrency.test.ts
 ```
 
-Full Jest suite (Testcontainers + Supertest) is sketched in the spec/plan and is the next iteration.
+**32 pruebas:**
 
-## Deploy (AWS)
+| Suite | Tests | Cubre |
+|---|---|---|
+| `auth.service.spec.ts` | 5 | Hash de contraseña, JWT, duplicados, credenciales inválidas |
+| `books.service.spec.ts` | 6 | CRUD, bloqueo de eliminación con reservas activas, gestión de copias |
+| `reservations.service.spec.ts` | 16 | Reglas R1–R5, idempotencia, ownership en devolución |
+| `concurrency.spec.ts` | 2 | 10 reservas simultáneas → exactamente 1 gana; M copias, N>M usuarios → M ganan |
+| `reservation-flow.e2e.spec.ts` | 3 | Flujo completo HTTP: register → createBook → reserve → return |
 
-ECS Fargate + RDS Postgres + ALB, deployed by GitHub Actions via OIDC. Manual one-time infra setup is documented in [`docs/aws-setup.md`](docs/aws-setup.md). The workflow lives at `.github/workflows/deploy-back.yml`.
+**Prueba de concurrencia (R2):**
+```
+Racing: 10 concurrent reservation attempts…
+  fulfilled: 1  ← solo una gana
+  rejected:  9  ← las demás reciben NO_COPIES_AVAILABLE
+  active reservations in DB: 1 ✅
+```
 
-## Architecture
+---
 
-- Spec: [`docs/superpowers/specs/2026-04-28-library-reservation-design.md`](docs/superpowers/specs/2026-04-28-library-reservation-design.md)
-- Plan (25 tasks, TDD): [`docs/superpowers/plans/2026-04-28-library-reservation.md`](docs/superpowers/plans/2026-04-28-library-reservation.md)
+## Modelo de datos
 
-## Explicit v1 trade-offs
+```
+User          — id, name, email, passwordHash, role, createdAt
+Book          — id, title, author, isbn?, description?, coverUrl?, createdAt, updatedAt
+BookCopy      — id, bookId, code (unique), status (AVAILABLE|RESERVED|MAINTENANCE)
+Reservation   — id, userId, bookCopyId, reservedAt, dueDate, returnedAt?, status, idempotencyKey?
+```
 
-Documented as deliberate, with v2 paths:
+**Índice crítico (R2):**
+```sql
+CREATE UNIQUE INDEX "reservation_active_per_copy"
+  ON "Reservation" ("bookCopyId")
+  WHERE status = 'ACTIVE';
+```
+Garantiza a nivel de base de datos que un ejemplar no pueda tener dos reservas activas simultáneas, incluso bajo carga concurrente.
 
-- **Logout is symbolic** (frontend clears the token). Real revocation needs refresh tokens stored server-side; not in v1.
-- **No global throttling.** `@nestjs/throttler`'s default guard reads `req.ip` from REST context and breaks under GraphQL. v2: a `GqlThrottlerGuard` that extracts the request from the GraphQL execution context.
-- **No Terraform/CDK.** AWS infra is provisioned manually and documented step-by-step.
-- **No Playwright E2E.** `test/concurrency.test.ts` plus the Jest unit suite (per the plan) is the v1 coverage.
+---
+
+## Decisiones técnicas
+
+**Concurrencia (R2):** En vez de pessimistic locking, se usa un índice parcial único en PostgreSQL. El servicio intenta el INSERT hasta 3 veces ante una violación `P2002` — busca el siguiente ejemplar disponible. El test de concurrencia prueba 10 goroutines en paralelo y verifica que exactamente 1 gana.
+
+**Idempotencia:** `createReservation` acepta un `idempotencyKey` opcional. El par `(userId, idempotencyKey)` tiene un `@@unique` en Prisma. Re-enviar la misma key devuelve la reserva existente sin crear una nueva — resuelve el problema de double-click en el cliente.
+
+**Portadas de libros:** Campo `coverUrl?: String` en `Book`. El frontend usa la prioridad: `coverUrl` → Open Library API (`isbn`) → placeholder con iniciales.
+
+**Logout simbólico (v1):** El JWT expira naturalmente en 1h. No hay refresh tokens ni blacklist. Documentado como decisión intencional para v1 por simplicidad.
+
+**GraphQL code-first:** Decoradores NestJS generan el schema automáticamente. `autoSchemaFile` produce `src/schema.gql` en dev.
+
+---
+
+## Despliegue en AWS (opcional)
+
+Infraestructura documentada paso a paso en [`docs/aws-setup.md`](docs/aws-setup.md):
+- ECR → imagen Docker multi-stage
+- ECS Fargate + RDS PostgreSQL (privado) + ALB + ACM
+- Migraciones como one-off Fargate task antes del deploy
+- GitHub Actions con OIDC (sin AWS keys en secrets) en `.github/workflows/deploy-back.yml`
