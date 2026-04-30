@@ -183,4 +183,29 @@ export class ReservationsService {
       orderBy: { reservedAt: 'desc' },
     });
   }
+
+  allReservations(filters: ReservationFilters & { search?: string }) {
+    return this.prisma.reservation.findMany({
+      where: {
+        status: filters.status,
+        reservedAt:
+          filters.from || filters.to
+            ? { gte: filters.from, lte: filters.to }
+            : undefined,
+        ...(filters.search
+          ? {
+              OR: [
+                { bookCopy: { book: { title: { contains: filters.search, mode: 'insensitive' } } } },
+                { bookCopy: { book: { author: { contains: filters.search, mode: 'insensitive' } } } },
+                { user: { name: { contains: filters.search, mode: 'insensitive' } } },
+                { user: { email: { contains: filters.search, mode: 'insensitive' } } },
+              ],
+            }
+          : {}),
+      },
+      include: { bookCopy: { include: { book: true } }, user: true },
+      orderBy: { reservedAt: 'desc' },
+      take: 100,
+    });
+  }
 }

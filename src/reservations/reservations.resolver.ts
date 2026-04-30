@@ -59,4 +59,12 @@ export class ReservationsResolver {
   ) {
     return this.svc.reservationsByUser(userId, filters ?? {});
   }
+
+  @Roles('ADMIN')
+  @Query(() => [ReservationOutput])
+  allReservations(
+    @Args('filters', { nullable: true }) filters?: ReservationFiltersInput,
+  ) {
+    return this.svc.allReservations(filters ?? {});
+  }
 }

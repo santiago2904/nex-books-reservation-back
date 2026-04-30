@@ -1,6 +1,6 @@
 import { Field, InputType } from '@nestjs/graphql';
 import { Type } from 'class-transformer';
-import { IsDate, IsEnum, IsOptional } from 'class-validator';
+import { IsDate, IsEnum, IsOptional, IsString } from 'class-validator';
 import { ResStatus } from '@prisma/client';
 
 @InputType()
@@ -12,4 +12,9 @@ export class ReservationFiltersInput {
   @IsOptional()
   @IsEnum(ResStatus)
   status?: ResStatus;
+
+  @Field(() => String, { nullable: true })
+  @IsOptional()
+  @IsString()
+  search?: string;
 }
