@@ -151,11 +151,8 @@ allReservations(filters: ReservationFiltersInput): [Reservation!]!
 # Unit tests (Testcontainers — requiere Docker)
 DATABASE_URL=postgresql://nex:nex@localhost:5433/nex_books pnpm test:unit
 
-# Integration tests
-pnpm test:integration
-
-# Concurrencia manual
-DATABASE_URL=postgresql://nex:nex@localhost:5433/nex_books pnpm exec tsx test/concurrency.test.ts
+# Integration tests (incluye prueba de concurrencia)
+DATABASE_URL=postgresql://nex:nex@localhost:5433/nex_books pnpm test:integration
 ```
 
 **32 pruebas:**
@@ -208,6 +205,14 @@ Garantiza a nivel de base de datos que un ejemplar no pueda tener dos reservas a
 **Logout simbólico (v1):** El JWT expira naturalmente en 1h. No hay refresh tokens ni blacklist. Documentado como decisión intencional para v1 por simplicidad.
 
 **GraphQL code-first:** Decoradores NestJS generan el schema automáticamente. `autoSchemaFile` produce `src/schema.gql` en dev.
+
+---
+
+## Colección Postman
+
+`docs/nex-books.postman_collection.json` — importa directamente en Postman.
+
+Incluye todas las queries y mutations organizadas por carpeta. El script del request **Login** guarda el token automáticamente en `{{token}}` para que el resto de requests funcionen sin configuración adicional. Pre-request scripts calculan `dueDate` y generan `idempotencyKey` automáticamente.
 
 ---
 
