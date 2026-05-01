@@ -1,0 +1,486 @@
+{
+  "info": {
+    "name": "Nex Books Reservation API",
+    "description": "GraphQL API para gestión de reservas de libros.\n\n**Setup:**\n1. Importa esta colección en Postman\n2. Importa el environment `nex-books.postman_environment.json`\n3. Ejecuta la request **Login** — el token se guarda automáticamente en `{{token}}`\n4. Ya puedes usar el resto de requests\n\n**Cuentas seed:**\n- admin@nex.test / Admin123! (ADMIN)\n- ana@nex.test / User1234! (USER)",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:4000/graphql", "type": "string" }
+  ],
+  "item": [
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Register",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}",
+            "body": {
+              "mode": "graphql",
+              "graphql": {
+                "query": "mutation Register($input: RegisterInput!) {\n  register(input: $input) {\n    accessToken\n    user { id name email role createdAt }\n  }\n}",
+                "variables": "{\n  \"input\": {\n    \"name\": \"Nuevo Usuario\",\n    \"email\": \"nuevo@nex.test\",\n    \"password\": \"Pass1234!\"\n  }\n}"
+              }
+            }
+          }
+        },
+        {
+          "name": "Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var data = pm.response.json();",
+                  "if (data.data && data.data.login) {",
+                  "  pm.collectionVariables.set('token', data.data.login.accessToken);",
+                  "  pm.collectionVariables.set('userId', data.data.login.user.id);",
+                  "  console.log('Token guardado. Rol:', data.data.login.user.role);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}",
+            "body": {
+              "mode": "graphql",
+              "graphql": {
+                "query": "mutation Login($input: LoginInput!) {\n  login(input: $input) {\n    accessToken\n    user { id name email role }\n  }\n}",
+                "variables": "{\n  \"input\": {\n    \"email\": \"admin@nex.test\",\n    \"password\": \"Admin123!\"\n  }\n}"
+              }
+            }
+          }
+        },
+        {
+          "name": "Me (perfil propio)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": "{{baseUrl}}",
+            "body": {
+              "mode": "graphql",
+              "graphql": {
+                "query": "query Me {\n  me { id name email role createdAt }\n}",
+                "variables": "{}"
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Libros (público)",
+      "item": [
+        {
+          "name": "Listar libros",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}",
+            "body": {
+              "mode": "graphql",
+              "graphql": {
+                "query": "query Books {\n  books {\n    id title author isbn description coverUrl\n    totalCopies availableCopies\n    copies { id code status }\n  }\n}",
+                "variables": "{}"
+              }
+            }
+          }
+        },
+        {
+          "name": "Listar libros disponibles",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}",
+            "body": {
+              "mode": "graphql",
+              "graphql": {
+                "query": "query BooksAvailable {\n  books(available: true) {\n    id title author availableCopies totalCopies\n  }\n}",
+                "variables": "{}"
+              }
+            }
+          }
+        },
+        {
+          "name": "Obtener libro por ID",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}",
+            "body": {
+              "mode": "graphql",
+              "graphql": {
+                "query": "query Book($id: ID!) {\n  book(id: $id) {\n    id title author isbn description coverUrl\n    totalCopies availableCopies\n    copies { id code status }\n  }\n}",
+                "variables": "{\n  \"id\": \"{{bookId}}\"\n}"
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Libros (ADMIN)",
+      "item": [
+        {
+          "name": "Crear libro",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var data = pm.response.json();",
+                  "if (data.data && data.data.createBook) {",
+                  "  pm.collectionVariables.set('bookId', data.data.createBook.id);",
+                  "  console.log('bookId guardado:', data.data.createBook.id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": "{{baseUrl}}",
+            "body": {
+              "mode": "graphql",
+              "graphql": {
+                "query": "mutation CreateBook($input: CreateBookInput!) {\n  createBook(input: $input) {\n    id title author isbn coverUrl totalCopies availableCopies\n    copies { id code status }\n  }\n}",
+                "variables": "{\n  \"input\": {\n    \"title\": \"El nombre del viento\",\n    \"author\": \"Patrick Rothfuss\",\n    \"isbn\": \"9788401337079\",\n    \"description\": \"Crónica del asesino de reyes.\",\n    \"coverUrl\": \"https://covers.openlibrary.org/b/isbn/9788401337079-L.jpg\",\n    \"initialCopies\": 3\n  }\n}"
+              }
+            }
+          }
+        },
+        {
+          "name": "Actualizar libro",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": "{{baseUrl}}",
+            "body": {
+              "mode": "graphql",
+              "graphql": {
+                "query": "mutation UpdateBook($id: ID!, $input: UpdateBookInput!) {\n  updateBook(id: $id, input: $input) {\n    id title author isbn description coverUrl\n  }\n}",
+                "variables": "{\n  \"id\": \"{{bookId}}\",\n  \"input\": {\n    \"description\": \"Descripción actualizada.\"\n  }\n}"
+              }
+            }
+          }
+        },
+        {
+          "name": "Añadir ejemplar",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": "{{baseUrl}}",
+            "body": {
+              "mode": "graphql",
+              "graphql": {
+                "query": "mutation AddCopy($bookId: ID!) {\n  addBookCopy(bookId: $bookId) { id code status }\n}",
+                "variables": "{\n  \"bookId\": \"{{bookId}}\"\n}"
+              }
+            }
+          }
+        },
+        {
+          "name": "Eliminar ejemplar",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": "{{baseUrl}}",
+            "body": {
+              "mode": "graphql",
+              "graphql": {
+                "query": "mutation RemoveCopy($copyId: ID!) {\n  removeBookCopy(copyId: $copyId)\n}",
+                "variables": "{\n  \"copyId\": \"{{copyId}}\"\n}"
+              }
+            }
+          }
+        },
+        {
+          "name": "Eliminar libro",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": "{{baseUrl}}",
+            "body": {
+              "mode": "graphql",
+              "graphql": {
+                "query": "mutation DeleteBook($id: ID!) {\n  deleteBook(id: $id)\n}",
+                "variables": "{\n  \"id\": \"{{bookId}}\"\n}"
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Reservas (USER)",
+      "item": [
+        {
+          "name": "Crear reserva",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  "// Fecha de devolución = 14 días desde hoy",
+                  "var dueDate = new Date();",
+                  "dueDate.setDate(dueDate.getDate() + 14);",
+                  "pm.collectionVariables.set('dueDate', dueDate.toISOString());"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var data = pm.response.json();",
+                  "if (data.data && data.data.createReservation) {",
+                  "  pm.collectionVariables.set('reservationId', data.data.createReservation.id);",
+                  "  console.log('reservationId guardado:', data.data.createReservation.id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": "{{baseUrl}}",
+            "body": {
+              "mode": "graphql",
+              "graphql": {
+                "query": "mutation CreateReservation($input: CreateReservationInput!) {\n  createReservation(input: $input) {\n    id status reservedAt dueDate\n    bookCopy { id code book { title author } }\n    user { name email }\n  }\n}",
+                "variables": "{\n  \"input\": {\n    \"bookId\": \"{{bookId}}\",\n    \"dueDate\": \"{{dueDate}}\",\n    \"idempotencyKey\": \"{{$guid}}\"\n  }\n}"
+              }
+            }
+          }
+        },
+        {
+          "name": "Mis reservas",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": "{{baseUrl}}",
+            "body": {
+              "mode": "graphql",
+              "graphql": {
+                "query": "query MyReservations($filters: ReservationFiltersInput) {\n  myReservations(filters: $filters) {\n    id status reservedAt dueDate returnedAt\n    bookCopy { code book { title author } }\n  }\n}",
+                "variables": "{\n  \"filters\": {}\n}"
+              }
+            }
+          }
+        },
+        {
+          "name": "Mis reservas activas",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": "{{baseUrl}}",
+            "body": {
+              "mode": "graphql",
+              "graphql": {
+                "query": "query MyActiveReservations {\n  myReservations(filters: { status: ACTIVE }) {\n    id status dueDate\n    bookCopy { code book { title } }\n  }\n}",
+                "variables": "{}"
+              }
+            }
+          }
+        },
+        {
+          "name": "Devolver libro",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": "{{baseUrl}}",
+            "body": {
+              "mode": "graphql",
+              "graphql": {
+                "query": "mutation ReturnBook($id: ID!) {\n  returnBook(reservationId: $id) {\n    id status returnedAt\n    bookCopy { code status book { title } }\n  }\n}",
+                "variables": "{\n  \"id\": \"{{reservationId}}\"\n}"
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Reservas (ADMIN)",
+      "item": [
+        {
+          "name": "Todas las reservas",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": "{{baseUrl}}",
+            "body": {
+              "mode": "graphql",
+              "graphql": {
+                "query": "query AllReservations($filters: ReservationFiltersInput) {\n  allReservations(filters: $filters) {\n    id status reservedAt dueDate returnedAt\n    bookCopy { code book { title author } }\n    user { name email }\n  }\n}",
+                "variables": "{\n  \"filters\": {}\n}"
+              }
+            }
+          }
+        },
+        {
+          "name": "Todas las reservas activas",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": "{{baseUrl}}",
+            "body": {
+              "mode": "graphql",
+              "graphql": {
+                "query": "query AllActiveReservations {\n  allReservations(filters: { status: ACTIVE }) {\n    id status dueDate\n    bookCopy { code book { title } }\n    user { name email }\n  }\n}",
+                "variables": "{}"
+              }
+            }
+          }
+        },
+        {
+          "name": "Buscar reservas por texto",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": "{{baseUrl}}",
+            "body": {
+              "mode": "graphql",
+              "graphql": {
+                "query": "query SearchReservations($search: String!) {\n  allReservations(filters: { search: $search }) {\n    id status reservedAt\n    bookCopy { book { title author } }\n    user { name email }\n  }\n}",
+                "variables": "{\n  \"search\": \"García\"\n}"
+              }
+            }
+          }
+        },
+        {
+          "name": "Reservas por libro",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": "{{baseUrl}}",
+            "body": {
+              "mode": "graphql",
+              "graphql": {
+                "query": "query ReservationsByBook($bookId: ID!, $filters: ReservationFiltersInput) {\n  reservationsByBook(bookId: $bookId, filters: $filters) {\n    id status reservedAt dueDate\n    user { name email }\n  }\n}",
+                "variables": "{\n  \"bookId\": \"{{bookId}}\",\n  \"filters\": {}\n}"
+              }
+            }
+          }
+        },
+        {
+          "name": "Reservas por usuario",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": "{{baseUrl}}",
+            "body": {
+              "mode": "graphql",
+              "graphql": {
+                "query": "query ReservationsByUser($userId: ID!, $filters: ReservationFiltersInput) {\n  reservationsByUser(userId: $userId, filters: $filters) {\n    id status reservedAt dueDate\n    bookCopy { book { title } }\n  }\n}",
+                "variables": "{\n  \"userId\": \"{{userId}}\",\n  \"filters\": {}\n}"
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Usuarios (ADMIN)",
+      "item": [
+        {
+          "name": "Crear usuario",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": "{{baseUrl}}",
+            "body": {
+              "mode": "graphql",
+              "graphql": {
+                "query": "mutation CreateUser($input: CreateUserInput!) {\n  createUser(input: $input) {\n    id name email role createdAt\n  }\n}",
+                "variables": "{\n  \"input\": {\n    \"name\": \"Carlos López\",\n    \"email\": \"carlos@nex.test\",\n    \"password\": \"Pass1234!\",\n    \"role\": \"USER\"\n  }\n}"
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Health",
+      "item": [
+        {
+          "name": "Liveness",
+          "request": {
+            "method": "GET",
+            "url": "http://localhost:4000/health"
+          }
+        },
+        {
+          "name": "Readiness (DB ping)",
+          "request": {
+            "method": "GET",
+            "url": "http://localhost:4000/health/ready"
+          }
+        }
+      ]
+    }
+  ],
+  "variable": [
+    { "key": "token", "value": "", "type": "string" },
+    { "key": "userId", "value": "", "type": "string" },
+    { "key": "bookId", "value": "", "type": "string" },
+    { "key": "copyId", "value": "", "type": "string" },
+    { "key": "reservationId", "value": "", "type": "string" },
+    { "key": "dueDate", "value": "", "type": "string" }
+  ]
+}
