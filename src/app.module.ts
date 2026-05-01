@@ -9,6 +9,7 @@ import { UsersModule } from './users/users.module';
 import { BooksModule } from './books/books.module';
 import { ReservationsModule } from './reservations/reservations.module';
 import { HealthModule } from './health/health.module';
+import { VoyagerModule } from './voyager/voyager.module';
 import { JwtStrategy } from './auth/jwt.strategy';
 import { GqlAuthGuard } from './auth/guards/gql-auth.guard';
 import { RolesGuard } from './auth/guards/roles.guard';
@@ -41,6 +42,7 @@ import { RolesGuard } from './auth/guards/roles.guard';
     BooksModule,
     ReservationsModule,
     HealthModule,
+    VoyagerModule,
   ],
   providers: [
     JwtStrategy,
