@@ -108,7 +108,7 @@ jobs:
             --cluster ${{ env.ECS_CLUSTER }} \
             --launch-type FARGATE \
             --task-definition ${{ steps.reg-migrate.outputs.arn }} \
-            --network-configuration "awsvpcConfiguration={subnets=[${{ env.ECS_SUBNETS }}],securityGroups=[${{ env.ECS_SECURITY_GROUP }}],assignPublicIp=DISABLED}" \
+            --network-configuration "awsvpcConfiguration={subnets=[${{ env.ECS_SUBNETS }}],securityGroups=[${{ env.ECS_SECURITY_GROUP }}],assignPublicIp=ENABLED}" \
             --query 'tasks[0].taskArn' --output text)
           echo "Migration task: $TASK_ARN"
           aws ecs wait tasks-stopped --cluster ${{ env.ECS_CLUSTER }} --tasks "$TASK_ARN"
