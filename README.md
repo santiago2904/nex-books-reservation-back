@@ -53,6 +53,17 @@ API REST/GraphQL para gestión de reservas de libros de biblioteca. Construida c
 
 ---
 
+## Producción (AWS)
+
+| Endpoint | URL |
+|---|---|
+| **API GraphQL** | `https://d3uqn5vjvaiydr.cloudfront.net/graphql` |
+| **Health** | `https://d3uqn5vjvaiydr.cloudfront.net/health` |
+
+Stack: ECS Fargate + RDS PostgreSQL 16 + ALB + CloudFront (HTTPS). CI/CD via GitHub Actions OIDC. Documentación completa de la infra en [`docs/aws-infrastructure.md`](docs/aws-infrastructure.md).
+
+---
+
 ## Quickstart
 
 ### Con Docker (recomendado — un solo comando)
