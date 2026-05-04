@@ -1,7 +1,8 @@
 # syntax=docker/dockerfile:1.7
+# Target platform: linux/amd64 (ECS Fargate x86_64)
 
 # ----- deps -----
-FROM node:20-alpine AS deps
+FROM --platform=linux/amd64 node:20-alpine AS deps
 WORKDIR /app
 RUN corepack enable
 COPY package.json pnpm-lock.yaml ./
@@ -10,7 +11,7 @@ RUN pnpm install --frozen-lockfile
 RUN pnpm prisma generate
 
 # ----- build -----
-FROM node:20-alpine AS build
+FROM --platform=linux/amd64 node:20-alpine AS build
 WORKDIR /app
 RUN corepack enable
 COPY --from=deps /app/node_modules ./node_modules
@@ -19,7 +20,7 @@ COPY . .
 RUN pnpm build
 
 # ----- runtime -----
-FROM node:20-alpine AS runtime
+FROM --platform=linux/amd64 node:20-alpine AS runtime
 WORKDIR /app
 RUN corepack enable && apk add --no-cache dumb-init wget openssl openssl-dev
 COPY --from=build /app/dist ./dist
