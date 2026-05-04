@@ -128,7 +128,8 @@ describe('Auth + reservation E2E (GraphQL via HTTP)', () => {
       i: { bookId: '00000000-0000-0000-0000-000000000000', dueDate },
     });
     expect(res.errors).toBeDefined();
-    expect(res.errors?.[0]?.extensions?.code).toBe('UNAUTHENTICATED');
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    expect(res.errors![0]!.extensions?.code).toBe('UNAUTHENTICATED');
   });
 
   it('blocks USER from creating a book (admin-only mutation)', async () => {
@@ -142,6 +143,7 @@ describe('Auth + reservation E2E (GraphQL via HTTP)', () => {
       token,
     );
     expect(res.errors).toBeDefined();
-    expect(res.errors?.[0]?.extensions?.code).toBe('FORBIDDEN');
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    expect(res.errors![0]!.extensions?.code).toBe('FORBIDDEN');
   });
 });
