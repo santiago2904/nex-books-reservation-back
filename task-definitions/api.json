@@ -24,7 +24,7 @@
       ],
       "secrets": [
         { "name": "DATABASE_URL", "valueFrom": "arn:aws:secretsmanager:us-east-1:150506369483:secret:nex/prod/db-9noSS8:DATABASE_URL::" },
-        { "name": "JWT_SECRET",   "valueFrom": "arn:aws:secretsmanager:us-east-1:150506369483:secret:nex/prod/jwt-LU1snk::" }
+        { "name": "JWT_SECRET",   "valueFrom": "arn:aws:secretsmanager:us-east-1:150506369483:secret:nex/prod/jwt-LU1snk" }
       ],
       "healthCheck": {
         "command": ["CMD-SHELL", "wget -qO- http://localhost:4000/health || exit 1"],
