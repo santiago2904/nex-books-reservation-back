@@ -12,16 +12,15 @@ on:
       - 'task-definitions/**'
       - '.github/workflows/deploy-back.yml'
 
-# Replace these placeholders before first run.
 env:
   AWS_REGION: us-east-1
-  AWS_ACCOUNT_ID: '000000000000'
+  AWS_ACCOUNT_ID: '150506369483'
   AWS_OIDC_ROLE: gh-actions-deploy
   ECR_REPOSITORY: nex-books-back
   ECS_CLUSTER: nex-cluster
   ECS_SERVICE: nex-books-api
-  ECS_SUBNETS: 'subnet-aaa,subnet-bbb'
-  ECS_SECURITY_GROUP: 'sg-xxx'
+  ECS_SUBNETS: 'subnet-0048544aeef6441b0,subnet-0cc84cdbbf9f2aed0'
+  ECS_SECURITY_GROUP: 'sg-03f936a068f584193'
 
 jobs:
   test:
