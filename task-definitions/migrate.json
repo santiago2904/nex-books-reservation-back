@@ -4,22 +4,26 @@
   "requiresCompatibilities": ["FARGATE"],
   "cpu": "256",
   "memory": "512",
-  "executionRoleArn": "arn:aws:iam::<account>:role/ecsTaskExecutionRole",
-  "taskRoleArn": "arn:aws:iam::<account>:role/nex-books-task-role",
+  "executionRoleArn": "arn:aws:iam::150506369483:role/ecsTaskExecutionRole",
+  "taskRoleArn": "arn:aws:iam::150506369483:role/nex-books-task-role",
+  "runtimePlatform": {
+    "operatingSystemFamily": "LINUX",
+    "cpuArchitecture": "X86_64"
+  },
   "containerDefinitions": [
     {
       "name": "api",
-      "image": "<account>.dkr.ecr.<region>.amazonaws.com/nex-books-back:placeholder",
+      "image": "150506369483.dkr.ecr.us-east-1.amazonaws.com/nex-books-back:latest",
       "essential": true,
-      "command": ["sh", "-c", "node node_modules/.pnpm/prisma@*/node_modules/prisma/build/index.js migrate deploy"],
+      "command": ["sh", "-c", "node node_modules/.pnpm/prisma@*/node_modules/prisma/build/index.js migrate deploy && node node_modules/.pnpm/tsx@*/node_modules/tsx/dist/cli.mjs prisma/seed.ts"],
       "secrets": [
-        { "name": "DATABASE_URL", "valueFrom": "arn:aws:secretsmanager:<region>:<account>:secret:nex/prod/db:DATABASE_URL::" }
+        { "name": "DATABASE_URL", "valueFrom": "arn:aws:secretsmanager:us-east-1:150506369483:secret:nex/prod/db-9noSS8:DATABASE_URL::" }
       ],
       "logConfiguration": {
         "logDriver": "awslogs",
         "options": {
           "awslogs-group": "/ecs/nex-books-back",
-          "awslogs-region": "<region>",
+          "awslogs-region": "us-east-1",
           "awslogs-stream-prefix": "migrate",
           "awslogs-create-group": "true"
         }
