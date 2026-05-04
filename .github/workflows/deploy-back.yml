@@ -5,12 +5,14 @@ on:
     branches: [main]
     paths:
       - 'src/**'
+      - 'test/**'
       - 'prisma/**'
       - 'Dockerfile'
       - 'package.json'
       - 'pnpm-lock.yaml'
       - 'task-definitions/**'
       - '.github/workflows/deploy-back.yml'
+  workflow_dispatch:
 
 env:
   AWS_REGION: us-east-1
