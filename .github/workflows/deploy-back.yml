@@ -54,7 +54,8 @@ jobs:
       - run: pnpm prisma generate
       - run: pnpm typecheck
       - run: pnpm build
-      - run: pnpm exec tsx test/concurrency.test.ts
+      - run: pnpm test:unit
+      - run: pnpm test:integration
 
   deploy:
     needs: test
